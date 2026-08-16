@@ -31,9 +31,8 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
     try {
       await buy(item.id, amount);
       sfx.buy();
-      toast(`BOUGHT ${amount}x ${item.material_name.toUpperCase()}!`, "success");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "BUY FAILED", "error");
+    } catch {
+      // error surfaced by game context toast
     } finally {
       setBuyBusy(null);
     }
@@ -52,11 +51,10 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
     try {
       await sell(sellMat, sellAmt);
       sfx.sell();
-      toast("LISTED FOR SALE!", "success");
       setSellAmt(1);
       setSellMat(null);
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "SELL FAILED", "error");
+    } catch {
+      // error surfaced by game context toast
     } finally {
       setSellBusy(false);
     }

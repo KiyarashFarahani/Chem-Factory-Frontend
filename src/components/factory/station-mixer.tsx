@@ -108,10 +108,9 @@ export function MixStation({ prefill }: { prefill?: number | null }) {
     try {
       await addMix(first.material_id, second.material_id, amount);
       sfx.mixStart();
-      toast("MIX STARTED!", "success");
       reset();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "COULD NOT START MIX", "error");
+    } catch {
+      // error surfaced by game context toast
     } finally {
       setSaving(false);
     }

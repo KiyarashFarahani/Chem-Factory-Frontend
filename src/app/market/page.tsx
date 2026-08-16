@@ -8,6 +8,7 @@ import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
 import { QtyStepper } from "@/components/factory/qty-stepper";
 import { MaterialIcon } from "@/components/material-icon";
+import { SHOP_USER_ID } from "@/lib/constants";
 import type { MarketItem, InventoryItem } from "@/lib/types";
 
 function MarketPageContent({
@@ -35,7 +36,7 @@ function MarketPageContent({
   const [buyBusy, setBuyBusy] = useState(false);
 
   const ownedAmount = inv.find((i) => i.material_id === sellMaterialId)?.amount ?? 0;
-  const playerItems = items.filter((i) => i.user_id > 0);
+  const playerItems = items.filter((i) => i.user_id > SHOP_USER_ID);
 
   const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
   const fetchInventory = useCallback(async (token: string) => api.inventory.export(token), []);
@@ -79,13 +80,14 @@ function MarketPageContent({
       return;
     }
     try {
-      await api.market.sell(token, { material_id: sellMaterialId, amount: sellAmount });
+      const res = await api.market.sell(token, { material_id: sellMaterialId, amount: sellAmount });
       sfx.sell();
-      toast("LISTED FOR SALE!", "success");
+      if (res.message) toast(res.message, "success");
       setInv(await fetchInventory(token));
       setItems(await fetchMarket(token));
     } catch (err) {
-      toast(err instanceof Error ? err.message : "FAILED", "error");
+      const msg = err instanceof Error ? err.message : "SELL FAILED";
+      toast(msg, "error");
     }
   }
 
@@ -93,14 +95,15 @@ function MarketPageContent({
     if (!token || !buyItem) return;
     setBuyBusy(true);
     try {
-      await api.market.buy(token, { market_id: buyItem.id, amount: buyAmount });
+      const res = await api.market.buy(token, { market_id: buyItem.id, amount: buyAmount });
       sfx.buy();
-      toast(`BOUGHT ${buyAmount}x ${buyItem.material_name.toUpperCase()}!`, "success");
+      if (res.message) toast(res.message, "success");
       setBuyItem(null);
       setInv(await fetchInventory(token));
       setItems(await fetchMarket(token));
     } catch (err) {
-      toast(err instanceof Error ? err.message : "BUY FAILED", "error");
+      const msg = err instanceof Error ? err.message : "BUY FAILED";
+      toast(msg, "error");
     } finally {
       setBuyBusy(false);
     }

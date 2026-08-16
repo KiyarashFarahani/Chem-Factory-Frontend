@@ -25,9 +25,8 @@ export function ShopStation({ items }: { items: MarketItem[] }) {
     try {
       await buy(item.id, amount);
       sfx.buy();
-      toast(`BOUGHT ${amount}x ${item.material_name.toUpperCase()}!`, "success");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "BUY FAILED", "error");
+    } catch {
+      // error surfaced by game context toast
     } finally {
       setBusy(null);
     }

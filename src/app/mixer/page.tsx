@@ -21,10 +21,9 @@ export default function MixerPage() {
         setDiscoveryMix(mix);
       } else {
         sfx.collect();
-        toast("MATERIAL COLLECTED!", "success");
       }
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "COULD NOT COLLECT", "error");
+    } catch {
+      // error surfaced by game context toast
     }
   }
 

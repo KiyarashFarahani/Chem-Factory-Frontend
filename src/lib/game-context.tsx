@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/toast";
 import type { User, InventoryItem, MarketItem, MixerEntry, PickResult } from "@/lib/types";
 
 interface GameStore {
@@ -25,6 +26,7 @@ const GameContext = createContext<GameStore | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [market, setMarket] = useState<MarketItem[]>([]);
@@ -37,7 +39,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!token) return;
     const [profile, inv, mk, mx] = await Promise.all([
-      api.user.profile(token),
+      api.user.profile(token).then((res) => res.data),
       api.inventory.export(token),
       api.market.export(token),
       api.mixer.mixes(token).catch((err) => {
@@ -100,51 +102,86 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const buy = useCallback(
     async (marketId: number, amount: number) => {
       if (!token) return;
-      await api.market.buy(token, { market_id: marketId, amount });
+      try {
+        const res = await api.market.buy(token, { market_id: marketId, amount });
+        if (res.message) toast(res.message, "success");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "BUY FAILED";
+        toast(message, "error");
+        throw err;
+      }
       await refresh();
     },
-    [token, refresh]
+    [token, refresh, toast]
   );
 
   const sell = useCallback(
     async (materialId: number, amount: number) => {
       if (!token) return;
-      await api.market.sell(token, { material_id: materialId, amount });
+      try {
+        const res = await api.market.sell(token, { material_id: materialId, amount });
+        if (res.message) toast(res.message, "success");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "SELL FAILED";
+        toast(message, "error");
+        throw err;
+      }
       await refresh();
     },
-    [token, refresh]
+    [token, refresh, toast]
   );
 
   const addMix = useCallback(
     async (first: number, second: number, amount: number) => {
       if (!token) return;
-      await api.mixer.add(token, {
-        first_ingredient_id: first,
-        second_ingredient_id: second,
-        amount,
-      });
+      try {
+        const res = await api.mixer.add(token, {
+          first_ingredient_id: first,
+          second_ingredient_id: second,
+          amount,
+        });
+        if (res.message) toast(res.message, "success");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "COULD NOT START MIX";
+        toast(message, "error");
+        throw err;
+      }
       await refresh();
     },
-    [token, refresh]
+    [token, refresh, toast]
   );
 
   const pick = useCallback(
     async (id: number) => {
       if (!token) throw new Error("NOT SIGNED IN");
-      const res = await api.mixer.pick(token, { id });
-      await refresh();
-      return res;
+      try {
+        const res = await api.mixer.pick(token, { id });
+        if (res.message) toast(res.message, "success");
+        await refresh();
+        return res.data;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "COULD NOT COLLECT";
+        toast(message, "error");
+        throw err;
+      }
     },
-    [token, refresh]
+    [token, refresh, toast]
   );
 
   const pickNew = useCallback(
     async (id: number, data: { name: string; price: number; mix_time: number }) => {
       if (!token) return;
-      await api.mixer.pickNew(token, { id, ...data });
-      await refresh();
+      try {
+        const res = await api.mixer.pickNew(token, { id, ...data });
+        if (res.message) toast(res.message, "success");
+        await refresh();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "COULD NOT CREATE";
+        toast(message, "error");
+        throw err;
+      }
     },
-    [token, refresh]
+    [token, refresh, toast]
   );
 
   const value = useMemo<GameStore>(

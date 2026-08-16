@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
-import { LEVEL_XP } from "@/lib/constants";
+import { LEVEL_XP, SHOP_USER_ID } from "@/lib/constants";
 import { MachineCard } from "@/components/factory/machine-card";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
 import { ShopStation } from "@/components/factory/station-shop";
@@ -31,8 +31,8 @@ const STATIONS: Array<{
   { id: "mixer", label: "MIXER", sub: "COMBINE MATERIALS", icon: "Item_487.png", color: "purple" },
 ];
 
-function xpPct(xp: number): number {
-  return Math.min((xp / LEVEL_XP) * 100, 100);
+function xpPct(xp: number, level: number): number {
+  return Math.min((xp / (level * LEVEL_XP)) * 100, 100);
 }
 
 export default function FactoryFloorPage() {
@@ -108,15 +108,15 @@ export default function FactoryFloorPage() {
   useGSAP(
     () => {
       if (xpRef.current && user) {
-        const pct = xpPct(user.xp);
+        const pct = xpPct(user.xp, user.level);
         gsap.fromTo(xpRef.current, { width: "0%" }, { width: `${pct}%`, duration: 0.8, ease: "power2.out" });
       }
     },
     { dependencies: [user?.xp, user?.level], revertOnUpdate: true }
   );
 
-  const shopItems = market.filter((m) => m.user_id === 0);
-  const playerItems = market.filter((m) => m.user_id > 0);
+  const shopItems = market.filter((m) => m.user_id === SHOP_USER_ID);
+  const playerItems = market.filter((m) => m.user_id > SHOP_USER_ID);
 
   // prefill-once via key: remounting MixStation with a fresh key lets the
   // initializer seed the 1ST slot, while any local state the player edits
@@ -139,10 +139,9 @@ export default function FactoryFloorPage() {
         sfx.collect();
         setCollected({ name: mix.material_name || "MATERIAL", amount: mix.amount });
         window.setTimeout(() => setCollected(null), 2000);
-        toast("MATERIAL COLLECTED!", "success");
       }
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "COULD NOT COLLECT", "error");
+    } catch {
+      // error surfaced by game context toast
     }
   }
 
@@ -169,7 +168,7 @@ export default function FactoryFloorPage() {
     );
   }
 
-  const pct = user ? xpPct(user.xp) : 0;
+  const pct = user ? xpPct(user.xp, user.level) : 0;
 
   return (
     <div className="floor-bg h-full overflow-y-auto page-enter" ref={floorRef}>
@@ -183,7 +182,7 @@ export default function FactoryFloorPage() {
         <div className="flex-1 max-w-xs">
           <div className="flex justify-between text-[7px] text-[var(--text-muted)] mb-1">
             <span>LVL {user?.level}</span>
-            <span>{user?.xp} / {LEVEL_XP} XP</span>
+            <span>{user?.xp} / {(user?.level ?? 1) * LEVEL_XP} XP</span>
           </div>
           <div className="pixel-progress">
             <div ref={xpRef} className="pixel-progress__fill" style={{ width: `${pct}%` }} />

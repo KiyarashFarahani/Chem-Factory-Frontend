@@ -9,22 +9,19 @@ import Link from "next/link";
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
-      await api.auth.register({ username, password });
-      toast("ACCOUNT CREATED! SIGN IN TO CONTINUE", "success");
+      const res = await api.auth.register({ username, password });
+      if (res.message) toast(res.message, "success");
       router.push("/login");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
-      setError(msg);
       toast(msg, "error");
     } finally {
       setLoading(false);
@@ -69,11 +66,6 @@ export default function RegisterPage() {
               required
             />
           </div>
-          {error && (
-            <div className="pixel-panel pixel-panel--inset text-[var(--accent-danger)] text-[8px] p-2">
-              {"!! "}{error}
-            </div>
-          )}
           <button
             type="submit"
             disabled={loading}

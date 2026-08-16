@@ -10,7 +10,6 @@ import Link from "next/link";
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -18,16 +17,14 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
       const res = await api.auth.login({ username, password });
-      login(res.token);
-      toast("LOGIN SUCCESSFUL!", "success");
+      login(res.data.token);
+      if (res.message) toast(res.message, "success");
       router.push("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";
-      setError(msg);
       toast(msg, "error");
     } finally {
       setLoading(false);
@@ -72,11 +69,6 @@ export default function LoginPage() {
               required
             />
           </div>
-          {error && (
-            <div className="pixel-panel pixel-panel--inset text-[var(--accent-danger)] text-[8px] p-2">
-              {"!! "}{error}
-            </div>
-          )}
           <button
             type="submit"
             disabled={loading}

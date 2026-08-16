@@ -19,8 +19,8 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
   const { toast } = useToast();
   const initialName = mix?.material_name || `${mix?.first_ingredient_name}+${mix?.second_ingredient_name}` || "";
   const [name, setName] = useState(initialName);
-  const [price, setPrice] = useState(0);
-  const [mixTime, setMixTime] = useState(0);
+  const [price, setPrice] = useState("");
+  const [mixTime, setMixTime] = useState("");
   const [icon, setIcon] = useState(getIconOverride(initialName) ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -32,35 +32,26 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
       toast("NAME THE NEW MATERIAL", "error");
       return;
     }
-    if (price <= 0) {
+    const priceNum = Number(price);
+    const mixTimeNum = Number(mixTime);
+    if (!price || priceNum <= 0) {
       toast("SET A PRICE", "error");
       return;
     }
     setSaving(true);
     try {
-      await pickNew(mix.id, { name: trimmed, price, mix_time: mixTime });
+      await pickNew(mix.id, { name: trimmed, price: priceNum, mix_time: mixTimeNum });
       if (icon && trimmed) setIconOverride(trimmed, icon);
-      let res: Awaited<ReturnType<typeof pick>>;
       try {
-        res = await pick(mix.id);
-      } catch (err) {
-        // the material is named server-side but the collect failed — surface
-        // the failure instead of leaving the user with a phantom discovery
-        toast(err instanceof Error ? err.message : "MATERIAL CREATED BUT NOT COLLECTED", "error");
+        await pick(mix.id);
+        sfx.discover();
         onDone();
-        return;
+      } catch {
+        // collect error surfaced by game context toast
+        onDone();
       }
-      sfx.discover();
-      if (res.is_picked) {
-        toast(`DISCOVERED "${trimmed.toUpperCase()}"!`, "success");
-      } else if (res.remaining_seconds > 0) {
-        toast(`DISCOVERED "${trimmed.toUpperCase()}"! NOW MIXING...`, "success");
-      } else {
-        toast(`DISCOVERED "${trimmed.toUpperCase()}"!`, "success");
-      }
-      onDone();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "COULD NOT CREATE", "error");
+    } catch {
+      // error surfaced by game context toast
     } finally {
       setSaving(false);
     }
@@ -107,7 +98,7 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
                   min={1}
                   placeholder="price..."
                   value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
+                  onChange={(e) => setPrice(e.target.value)}
                   className="pixel-input"
                 />
               </div>
@@ -119,7 +110,7 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
                   min={0}
                   placeholder="seconds..."
                   value={mixTime}
-                  onChange={(e) => setMixTime(Number(e.target.value))}
+                  onChange={(e) => setMixTime(e.target.value)}
                   className="pixel-input"
                 />
               </div>

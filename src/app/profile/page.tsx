@@ -22,7 +22,7 @@ export default function ProfilePage() {
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (token: string) => api.user.profile(token), []);
+  const fetchProfile = useCallback(async (token: string) => api.user.profile(token).then((res) => res.data), []);
   const fetchInventory = useCallback(async (token: string) => api.inventory.export(token), []);
   const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
   const fetchMixes = useCallback(async (token: string) => api.mixer.mixes(token), []);
@@ -111,12 +111,12 @@ export default function ProfilePage() {
             <div className="mb-3">
               <div className="flex justify-between text-[8px] text-[var(--text-muted)] mb-1">
                 <span>XP</span>
-                <span>{user.xp} / {LEVEL_XP}</span>
+                <span>{user.xp} / {user.level * LEVEL_XP}</span>
               </div>
               <div className="pixel-progress">
                 <div
                   className="pixel-progress__fill"
-                  style={{ width: `${Math.min((user.xp / LEVEL_XP) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((user.xp / (user.level * LEVEL_XP)) * 100, 100)}%` }}
                 />
               </div>
             </div>
